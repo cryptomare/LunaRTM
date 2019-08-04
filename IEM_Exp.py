@@ -49,8 +49,8 @@ def surface(theta, length, lambda_wave, sigma, f_hh, f_vv, F_hh, F_vv, cutoff=1e
         i += 1
         indicator = 1 / np.math.factorial(i)
 
-    sigma_hh = 10 * np.log10(invariant * register_hh)
-    sigma_vv = 10 * np.log10(invariant * register_vv)
+    sigma_hh = (invariant * register_hh)
+    sigma_vv = (invariant * register_vv)
 
     return {'sigma_hh': sigma_hh, 'sigma_vv': sigma_vv}
 
@@ -119,35 +119,47 @@ def transmission(theta, eps):
 
 def volume(a, theta, T_hh, T_vv, vol_hh, vol_vv, tau, theta_t):
 
-    vol_hh = 0.5 * a * np.cos(theta) * T_hh * vol_hh * (
+    volume_hh = 0.5 * a * np.cos(theta) * T_hh * vol_hh * (
             1 - np.exp(((-1) * 2 * tau) / np.cos(theta_t))) * 1.5
-    vol_vv = 0.5 * a * np.cos(theta) * T_vv * vol_vv * (
+    volume_vv = 0.5 * a * np.cos(theta) * T_vv * vol_vv * (
             1 - np.exp(((-1) * 2 * tau) / np.cos(theta_t))) * 1.5
 
-    sigma_vol_hh = 10 * np.log10(vol_hh)
-    sigma_vol_vv = 10 * np.log10(vol_vv)
+    sigma_vol_hh = 10 * np.log10(volume_hh)
+    sigma_vol_vv = 10 * np.log10(volume_vv)
 
     return sigma_vol_hh, sigma_vol_vv
 
 
 def subsurface(theta, T_hh, sub_hh, T_vv, sub_vv, tau, theta_t, length,
-               lambda_wave, sigma, eps, cutoff=1e-16):
-
-    F_hh, F_vv, f_hh, f_vv = coeffs(eps, theta_t)
+               lambda_wave, sigma, f_hh, f_vv, F_hh, F_vv, cutoff=1e-16):
 
     subsur_hh = (np.cos(theta) / np.cos(theta_t)) * T_hh * sub_hh * np.exp(
         ((-1) * 2 * tau) / np.cos(theta_t)) * surface(
         theta_t, length, lambda_wave, sigma, f_hh, f_vv, F_hh, F_vv, cutoff
-        )
+        )['sigma_hh']
     subsur_vv = (np.cos(theta) / np.cos(theta_t)) * T_vv * sub_vv * np.exp(
         ((-1) * 2 * tau) / np.cos(theta_t)) * surface(
         theta_t, length, lambda_wave, sigma, f_hh, f_vv, F_hh, F_vv, cutoff
-        )
+        )['sigma_vv']
 
     sigma_subsur_hh = 10 * np.log10(subsur_hh)
     sigma_subsur_vv = 10 * np.log10(subsur_vv)
 
     return sigma_subsur_hh, sigma_subsur_vv
+
+#
+# def subsurface(theta, d, eps, eps_sub, slope, wave_lambda):
+#
+#     eps_r = eps.real
+#     eps_i = eps.imag
+#     eps_sub_r = eps_sub.real
+#     af = np.exp((4 * np.pi * eps_i * d) / (wave_lambda * np.sqrt(eps_r)))
+#     theta_sub = np.arcsin((eps_r ** (-0.5)) * np.sin(theta))
+#     r_sub = (np.sqrt(eps_r) - np.sqrt(eps_sub_r)) / (np.sqrt(eps_r) + np.sqrt(eps_sub_r)) ** 2
+#     sigma_subsur = 0.5 * (af * r_sub * slope) * ((((np.cos(theta_sub)) ** 4) +
+#                                                  (slope * ((np.sin(
+#                                                      theta_sub)) ** 2))) ** (-1.5)) * np.cos(theta)
+#     return sigma_subsur
 
 
 def reflectivity(r_h, r_v):
@@ -157,8 +169,13 @@ def reflectivity(r_h, r_v):
     return R
 
 
-def subsurface_volume(a, theta, T_hh, sub_hh, T_vv, sub_vv, tau, theta_t, R):
+def subsurface_volume(a, theta, eps_s, eps_sub, T_hh, sub_hh, T_vv, sub_vv,
+                      tau, theta_t):
 
+    # eps_r = eps_s.real
+    # eps_sub_r = eps_sub.real
+    R = (np.sqrt(eps_sub) - np.sqrt(eps_s)) / (np.sqrt(eps_sub) + np.sqrt(
+        eps_s)) ** 2
     sub_vol_hh = a * np.cos(theta) * T_hh * sub_hh * R * (tau / np.cos(
         theta_t)) * np.exp(((-1) * 2 * tau) / np.cos(theta_t)) * 3.0
     sub_vol_vv = a * np.cos(theta) * T_vv * sub_vv * R * (tau / np.cos(
