@@ -98,7 +98,7 @@ def rayleigh(eps_s, eps, vf, k, r_s, d):
     a = ks / ke
     tau = ke * d
 
-    return a, tau
+    return a, tau, k_r
 
 
 def transmission(theta, eps):
@@ -148,34 +148,34 @@ def subsurface(theta, T_hh, sub_hh, T_vv, sub_vv, tau, theta_t, length,
     return sigma_subsur_hh, sigma_subsur_vv
 
 #
-# def subsurface(theta, d, eps, eps_sub, slope, wave_lambda):
+# def subsurface(theta, tau, eps, eps_sub, slope, theta_t):
 #
 #     eps_r = eps.real
-#     eps_i = eps.imag
 #     eps_sub_r = eps_sub.real
-#     af = np.exp((4 * np.pi * eps_i * d) / (wave_lambda * np.sqrt(eps_r)))
+#     af = np.exp(((-1) * 2 * tau) / np.cos(theta_t))
 #     theta_sub = np.arcsin((eps_r ** (-0.5)) * np.sin(theta))
 #     r_sub = (np.sqrt(eps_r) - np.sqrt(eps_sub_r)) / (np.sqrt(eps_r) + np.sqrt(eps_sub_r)) ** 2
 #     sigma_subsur = 0.5 * (af * r_sub * slope) * ((((np.cos(theta_sub)) ** 4) +
 #                                                  (slope * ((np.sin(
 #                                                      theta_sub)) ** 2))) ** (-1.5)) * np.cos(theta)
+#
 #     return sigma_subsur
 
 
-def reflectivity(r_h, r_v):
-
-    R = 0.5 * (r_h + r_v)
-
-    return R
-
-
-def subsurface_volume(a, theta, eps_s, eps_sub, T_hh, sub_hh, T_vv, sub_vv,
+def subsurface_volume(a, theta, eps_s, eps_sub, T_hh, T_vv, sub_hh, sub_vv,
                       tau, theta_t):
 
     # eps_r = eps_s.real
     # eps_sub_r = eps_sub.real
     R = (np.sqrt(eps_sub) - np.sqrt(eps_s)) / (np.sqrt(eps_sub) + np.sqrt(
         eps_s)) ** 2
+    # l_1t = np.exp((-1) * (sigma ** 2) * (((k * np.cos(theta)) - (k_r * np.cos(
+    #    theta_t))) ** 2))
+    # l_r = np.exp((-1) * (sigma_2 ** 2) * (k_r ** 2) * (((np.cos(theta)) ** 2)
+    #                                                  - ((np.cos(theta_t)) **
+    #                                                    2)))
+    # sub_vol_hh = a * np.cos(theta) * T_hh * sub_hh * R * (tau / np.cos(
+    #  theta_t)) * np.exp(((-1) * 2 * tau) / np.cos(theta_t)) * 3.0
     sub_vol_hh = a * np.cos(theta) * T_hh * sub_hh * R * (tau / np.cos(
         theta_t)) * np.exp(((-1) * 2 * tau) / np.cos(theta_t)) * 3.0
     sub_vol_vv = a * np.cos(theta) * T_vv * sub_vv * R * (tau / np.cos(
