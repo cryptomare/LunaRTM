@@ -1,4 +1,4 @@
-from IEM_Exp import coeffs, volume, subsurface, subsurface_volume
+from IEM_Exp import coeffs, volume, subsurface, subsurface_volume, total
 from IEM_Exp import surface
 from IEM_Exp import rayleigh
 from IEM_Exp import transmission
@@ -152,7 +152,10 @@ import pandas as pd
 
 # plt.scatter(x_dat, y_dat)
 # plt.show()
-eps_s = 3.15 + 0.001j
+
+###############################################################################
+
+eps_s = 6.0 + 0.01j
 eps = 2.7 + 0.003j
 vf = 0.1
 k = (2.0 * np.pi) / 12.6
@@ -172,20 +175,62 @@ theta_all = np.deg2rad(np.arange(5, 86, 5))
 #         )
 #     return sigma_vol_hh
 
-# def compile(theta):
-#     a, tau, k_r = rayleigh(eps_s=eps_s, eps=eps, vf=vf, k=k, r_s=r_s, d=d)
-#     T_hh, T_vv, sub_hh, sub_vv, vol_hh, vol_vv, theta_t = transmission(
-#             theta=theta,
-#             eps=eps.real
-#         )
-#     f_hh, f_vv, F_hh, F_vv = coeffs(eps=6.0, theta=theta_t)
-#
-#     sigma_subsur_hh, _ = subsurface(
-#         theta, T_hh, sub_hh, T_vv, sub_vv, tau, theta_t, length=12.6,
-#         lambda_wave=12.6, sigma=0.5, f_hh=f_hh, f_vv=f_vv, F_hh=F_hh,
-#         F_vv=F_vv, cutoff=1e-16)
-#
-#     return sigma_subsur_hh
+def compile(theta):
+
+    a, tau, k_r = rayleigh(eps_s=eps_s, eps=eps, vf=vf, k=k, r_s=r_s, d=d)
+
+    T_hh, T_vv, sub_hh, sub_vv, vol_hh, vol_vv, theta_t = transmission(
+        theta=theta, eps=eps)
+
+    f_hh, f_vv, F_hh, F_vv = coeffs(eps=6.0+0.05j, theta=theta_t)
+
+    sigma_hh_1, sigma_vv_1, _, _ = surface(theta=theta_t, length=12.6,
+                                           lambda_wave=12.6, sigma=1.5,
+                                           f_hh=f_hh, f_vv=f_vv, F_hh=F_hh,
+                                           F_vv=F_vv, cutoff=1e-16)
+
+    f_hh, f_vv, F_hh, F_vv = coeffs(eps=2.7, theta=theta)
+
+    sigma_hh, sigma_vv, sigma_surf_hh, sigma_surf_vv = surface(theta=theta,
+                                                        length=12.6,
+                                                 lambda_wave=12.6,
+                                                 sigma=1.5,
+                                                 f_hh=f_hh, f_vv=f_vv,
+                                                 F_hh=F_hh, F_vv=F_vv,
+                                                 cutoff=1e-16)
+
+    sigma_vol_hh, sigma_vol_vv, volume_hh, volume_vv = volume(a=a, theta=theta, T_hh=T_hh,
+                                        T_vv=T_vv, vol_hh=vol_hh,
+                                        vol_vv=vol_vv, tau=tau, theta_t=theta_t)
+
+    sigma_subsur_hh, sigma_subsur_vv, subsur_hh, subsur_vv = subsurface(theta=theta, T_hh=T_hh,
+                                                  sub_hh=sub_hh, T_vv=T_vv,
+                                                  sub_vv=sub_vv, tau=tau,
+                                                  theta_t=theta_t,
+                                                  sigma_hh=sigma_hh_1,
+                                                  sigma_vv=sigma_vv_1)
+
+    sigma_sub_vol_hh, sigma_sub_vol_vv, sub_vol_hh, sub_vol_vv = subsurface_volume(a=a, theta=theta,
+                                                           eps_s=eps_s,
+                                                           eps_sub=6.0+0.05j,
+                                                           T_hh=T_hh,
+                                                           sub_hh=sub_hh,
+                                                           T_vv=T_vv,
+                                                           sub_vv=sub_vv,
+                                                           tau=tau,
+                                                           theta_t=theta_t)
+
+    sigma_total_hh, sigma_total_vv = total(sigma_hh=sigma_hh,
+                                           sigma_vv=sigma_vv,
+                               sigma_vol_hh=volume_hh,
+                               sigma_vol_vv=volume_vv,
+                               sigma_subsur_hh=subsur_hh,
+                               sigma_subsur_vv=subsur_vv,
+                               sigma_sub_vol_hh=sub_vol_hh,
+                               sigma_sub_vol_vv=sub_vol_vv)
+
+    return sigma_sub_vol_hh, sigma_subsur_hh, sigma_vol_hh, sigma_surf_hh, \
+           sigma_total_hh
 
 # def compile(theta):
 #     a, tau = rayleigh(eps_s=eps_s, eps=eps, vf=vf, k=k, r_s=r_s, d=d)
