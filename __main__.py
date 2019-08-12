@@ -3,8 +3,11 @@ from IEM_Exp import surface
 from IEM_Exp import rayleigh
 from IEM_Exp import transmission
 import numpy as np
+import matplotlib
 from matplotlib import pyplot as plt
 import pandas as pd
+
+matplotlib.rcParams.update({'font.size': 14, 'font.weight' : 'bold'})
 # from matplotlib import pyplot as plt
 
 # df = pd.read_csv("Dielectric_Constant.csv")
@@ -161,7 +164,8 @@ vf = 0.1
 k = (2.0 * np.pi) / 12.6
 r_s = 2
 d = 4
-theta_all = np.deg2rad(np.arange(5, 86, 5))
+xpts = np.arange(0.2, 90, 0.1)
+theta_all = np.deg2rad(np.array(xpts))
 
 
 # def compile(theta):
@@ -249,6 +253,74 @@ def compile(theta):
 # vcompile = np.vectorize(compile)
 # vcompile = list(map(compile, theta_all.tolist()))
 y_vals = np.array(list(map(compile, theta_all.tolist())))
-print(y_vals.shape)
-plt.plot(np.rad2deg(theta_all), y_vals)
+theta_m = np.deg2rad(np.arange(5, 90, 5))
+markers = np.array(list(map(compile, theta_m.tolist())))
+dat = np.append(np.reshape(np.rad2deg(theta_all), (theta_all.size, 1)), y_vals, 
+axis=1)
+mrk = np.append(np.reshape(np.rad2deg(theta_m), (theta_m.size, 1)), markers, 
+axis=1)
+cols = ['x', 'y1', 'y2', 'y3', 'y4', 'y5']
+df_data = pd.DataFrame(dat.real, columns=cols)
+df_marker = pd.DataFrame(mrk.real, columns=cols)
+df_data.to_csv('data.csv', index=False)
+df_marker.to_csv('marker.csv', index=False)
+# print(markers.shape)
+# print(y_vals.shape)
+fig = plt.figure(num='Sensitivity Plot', tight_layout=True)
+ax = fig.add_subplot(111)
+ax.set_xlim([0, 90])
+ax.set_ylim([-90, 10])
+ax.plot(np.rad2deg(theta_all), y_vals.real)
+
+ax.scatter(np.rad2deg(theta_m), markers[:, 0].real)
+ax.scatter(np.rad2deg(theta_m), markers[:, 1].real)
+ax.scatter(np.rad2deg(theta_m), markers[:, 2].real)
+ax.scatter(np.rad2deg(theta_m), markers[:, 3].real)
+ax.scatter(np.rad2deg(theta_m), markers[:, 4].real)
+ax.axvline(x=10, c='grey', ls='-')
+ax.axvline(x=20, c='grey', ls='-')
+ax.axvline(x=30, c='grey', ls='--')
+ax.axvline(x=35, c='grey', ls='-')
+ax.axvline(x=40, c='grey', ls='--')
+ax.axvline(x=44, c='grey', ls='--')
+ax.axvline(x=49, c='grey', ls='-')
+ax.axvline(x=54, c='grey', ls='--')
+ax.axvspan(10, 40, alpha=0.2, color='grey')
+ax.axvspan(44, 54, alpha=0.2, color='grey')
+#xticks_pre = list(np.arange(0, 31, 10))
+#xticks_custom = [35, 40, 44, 49, 50, 54] 
+#xticks_post = list(np.arange(60, 91, 10))
+#xticks = xticks_pre + xticks_custom + xticks_post
+xticks = np.arange(0, 91, 10)
+xstr = list(np.array(xticks).astype(str))
+xstr = ['$' + xtick + '^\\circ$' for xtick in xstr]
+ax.set_xticks(xticks)
+# xtl = ax.set_xticklabels(xstr)
+ax.set_yticks(np.arange(-90, 11, 20))
+#xtl[4].set_color('blue')
+#xtl[6].set_color('blue')
+#xtl[7].set_color('blue')
+#xtl[9].set_color('blue')
+ax.text(15, -70, 'Chandrayaan-2 \n(Hybrid Pol)\n$10^\circ-20^\circ$', 
+rotation=90, horizontalalignment='center', verticalalignment='center')
+#ax.text(15, -60, "($10^\circ-20^\circ$)", rotation=90, 
+#horizontalalignment='center', verticalalignment='center')
+
+ax.text(25, -70, 'Chandrayaan-2 \n(Full Pol)\n$20^\circ-30^\circ$', 
+rotation=90, 
+horizontalalignment='center', verticalalignment='center')
+
+
+ax.text(37, -70, 'Chandrayaan-1\n$35^\circ$', rotation=90, 
+horizontalalignment='center', verticalalignment='center')
+#ax.text(51, -70, 'LRO', rotation=90, 
+#horizontalalignment='center', verticalalignment='center')
+
+ax.text(51, -70, 'LRO\n$49^\circ$', rotation=90, 
+horizontalalignment='center', verticalalignment='center')
+
+ax.set_xlabel('Incidence Angle ($^\circ$)')
+ax.set_ylabel('Radar Backscatter : $\sigma^0$ (dB)')
+
+
 plt.show()
