@@ -193,7 +193,7 @@ def compile(theta):
                                            f_hh=f_hh, f_vv=f_vv, F_hh=F_hh,
                                            F_vv=F_vv, cutoff=1e-16)
 
-    f_hh, f_vv, F_hh, F_vv = coeffs(eps=2.7, theta=theta)
+    f_hh, f_vv, F_hh, F_vv = coeffs(eps=2.7+0.003j, theta=theta)
 
     sigma_hh, sigma_vv, sigma_surf_hh, sigma_surf_vv = surface(theta=theta,
                                                         length=12.6,
@@ -268,9 +268,18 @@ df_marker.to_csv('marker.csv', index=False)
 # print(y_vals.shape)
 fig = plt.figure(num='Sensitivity Plot', tight_layout=True)
 ax = fig.add_subplot(111)
-ax.set_xlim([0, 90])
+
 ax.set_ylim([-90, 10])
-ax.plot(np.rad2deg(theta_all), y_vals.real)
+l1, = ax.plot(np.rad2deg(theta_all), y_vals.real[:, 0])
+l2, = ax.plot(np.rad2deg(theta_all), y_vals.real[:, 1])
+l3, = ax.plot(np.rad2deg(theta_all), y_vals.real[:, 2])
+l4, = ax.plot(np.rad2deg(theta_all), y_vals.real[:, 3])
+l5, = ax.plot(np.rad2deg(theta_all), y_vals.real[:, 4])
+l1.set_label('Subsurface - Volume')
+l2.set_label('Subsurface')
+l3.set_label('Volume')
+l4.set_label('Surface')
+l5.set_label('Total')
 
 ax.scatter(np.rad2deg(theta_m), markers[:, 0].real)
 ax.scatter(np.rad2deg(theta_m), markers[:, 1].real)
@@ -322,5 +331,7 @@ horizontalalignment='center', verticalalignment='center')
 ax.set_xlabel('Incidence Angle ($^\circ$)')
 ax.set_ylabel('Radar Backscatter : $\sigma^0$ (dB)')
 
+ax.legend()
+ax.set_xlim([0, 88.5])
 
 plt.show()
