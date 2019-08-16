@@ -1,4 +1,4 @@
-from IEM_Exp import coeffs, volume, subsurface, subsurface_volume, total
+from IEM_Exp import coeffs, mixture, reg_dielec, volume, subsurface, subsurface_volume, total
 from IEM_Exp import surface
 from IEM_Exp import rayleigh
 from IEM_Exp import transmission
@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 
 matplotlib.rcParams.update({'font.size': 14, 'font.weight' : 'bold'})
+
 # from matplotlib import pyplot as plt
 
 # df = pd.read_csv("Dielectric_Constant.csv")
@@ -158,54 +159,56 @@ matplotlib.rcParams.update({'font.size': 14, 'font.weight' : 'bold'})
 
 ###############################################################################
 
-eps_s = 6.0 + 0.01j
-eps = 2.7 + 0.003j
+v1 = 0
+v2 = 1
+ft = 7
+bd = 1.525
 vf = 0.1
 k = (2.0 * np.pi) / 12.6
-r_s = 2
-d = 4
+r_s = 1
+d = 5
+sigma_2 = 0.2
+sigma = 1
+length = 12.6
+lambda_wave = 12.6
+eps_sub = 6.0 + 0.05j
+eps_ice = 3.15 + 0.001j
+eps_rock = 8.0 + 0.07j
+
+
 xpts = np.arange(0.2, 90, 0.1)
 theta_all = np.deg2rad(np.array(xpts))
 
 
-# def compile(theta):
-#     a, tau, k_r = rayleigh(eps_s=eps_s, eps=eps, vf=vf, k=k, r_s=r_s, d=d)
-#     T_hh, T_vv, sub_hh, sub_vv, vol_hh, vol_vv, theta_t = transmission(
-#             theta=theta,
-#             eps=eps.real
-#         )
-#     sigma_vol_hh, _ = volume(
-#             a, theta, T_hh, T_vv, vol_hh, vol_vv, tau, theta_t
-#         )
-#     return sigma_vol_hh
-
 def compile(theta):
 
-    a, tau, k_r = rayleigh(eps_s=eps_s, eps=eps, vf=vf, k=k, r_s=r_s, d=d)
+    eps, eps_real, eps_imag, d_r = reg_dielec(ft=ft, bd=bd, lambda_wave=lambda_wave)
+    
+    eps_s = mixture(v1=v1, v2=v2, eps_ice=eps_ice, eps_rock=eps_rock)
+    
+    a, tau, k_r = rayleigh(eps_s=eps_s, eps=eps, eps_real=eps_real, eps_imag=eps_imag, vf=vf, k=k, r_s=r_s, d=d)
 
-    T_hh, T_vv, sub_hh, sub_vv, vol_hh, vol_vv, theta_t = transmission(
-        theta=theta, eps=eps)
+    T_hh, T_vv, sub_hh, sub_vv, theta_t = transmission(theta=theta, eps=eps)
 
-    f_hh, f_vv, F_hh, F_vv = coeffs(eps=6.0+0.05j, theta=theta_t)
+    _, _, f_hh, f_vv, F_hh, F_vv = coeffs(eps=eps_sub, theta=theta_t)
 
-    sigma_hh_1, sigma_vv_1, _, _ = surface(theta=theta_t, length=12.6,
-                                           lambda_wave=12.6, sigma=1.5,
+    sigma_hh_1, sigma_vv_1, _, _ = surface(theta=theta_t, length=length,
+                                           lambda_wave=lambda_wave, sigma=sigma_2,
                                            f_hh=f_hh, f_vv=f_vv, F_hh=F_hh,
                                            F_vv=F_vv, cutoff=1e-16)
 
-    f_hh, f_vv, F_hh, F_vv = coeffs(eps=2.7+0.003j, theta=theta)
+    _, _, f_hh, f_vv, F_hh, F_vv = coeffs(eps=eps, theta=theta)
 
-    sigma_hh, sigma_vv, sigma_surf_hh, sigma_surf_vv = surface(theta=theta,
-                                                        length=12.6,
-                                                 lambda_wave=12.6,
-                                                 sigma=1.5,
+    sigma_hh, sigma_vv, sigma_sur_hh, sigma_sur_vv = surface(theta=theta,
+                                                        length=length,
+                                                 lambda_wave=lambda_wave,
+                                                 sigma=sigma,
                                                  f_hh=f_hh, f_vv=f_vv,
                                                  F_hh=F_hh, F_vv=F_vv,
                                                  cutoff=1e-16)
 
     sigma_vol_hh, sigma_vol_vv, volume_hh, volume_vv = volume(a=a, theta=theta, T_hh=T_hh,
-                                        T_vv=T_vv, vol_hh=vol_hh,
-                                        vol_vv=vol_vv, tau=tau, theta_t=theta_t)
+                                        T_vv=T_vv, sub_hh=sub_hh, sub_vv=sub_vv, tau=tau, theta_t=theta_t)
 
     sigma_subsur_hh, sigma_subsur_vv, subsur_hh, subsur_vv = subsurface(theta=theta, T_hh=T_hh,
                                                   sub_hh=sub_hh, T_vv=T_vv,
@@ -214,15 +217,15 @@ def compile(theta):
                                                   sigma_hh=sigma_hh_1,
                                                   sigma_vv=sigma_vv_1)
 
-    sigma_sub_vol_hh, sigma_sub_vol_vv, sub_vol_hh, sub_vol_vv = subsurface_volume(a=a, theta=theta,
+    r_h, r_v, _, _, _, _ = coeffs(eps=eps_sub, theta=theta_t)
+
+    sigma_sub_vol_hh, sigma_sub_vol_vv, sub_vol_hh, sub_vol_vv = subsurface_volume(a=a, theta=theta, eps=eps,
                                                            eps_s=eps_s,
-                                                           eps_sub=6.0+0.05j,
-                                                           T_hh=T_hh,
+                                                           eps_sub=eps_sub, T_hh=T_hh, T_vv=T_vv,
                                                            sub_hh=sub_hh,
-                                                           T_vv=T_vv,
                                                            sub_vv=sub_vv,
-                                                           tau=tau,
-                                                           theta_t=theta_t)
+                                                           tau=tau, r_h=r_h, r_v=r_v,
+                                                           theta_t=theta_t, sigma_2=sigma_2, k=k)
 
     sigma_total_hh, sigma_total_vv = total(sigma_hh=sigma_hh,
                                            sigma_vv=sigma_vv,
@@ -233,21 +236,8 @@ def compile(theta):
                                sigma_sub_vol_hh=sub_vol_hh,
                                sigma_sub_vol_vv=sub_vol_vv)
 
-    return sigma_sub_vol_hh, sigma_subsur_hh, sigma_vol_hh, sigma_surf_hh, \
+    return sigma_sub_vol_hh, sigma_subsur_hh, sigma_vol_hh, sigma_sur_hh, \
            sigma_total_hh
-
-# def compile(theta):
-#     a, tau = rayleigh(eps_s=eps_s, eps=eps, vf=vf, k=k, r_s=r_s, d=d)
-#     T_hh, T_vv, sub_hh, sub_vv, vol_hh, vol_vv, theta_t = transmission(
-#             theta=theta,
-#             eps=eps.real
-#         )
-#     sigma_sub_vol_hh, _ = subsurface_volume(a, theta, eps_s=eps_s,
-#                                          eps_sub=8.0+0.05j, T_hh=T_hh,
-#                                          sub_hh=sub_hh, T_vv=T_vv,
-#                                          sub_vv=sub_vv, tau=tau,
-#                                          theta_t=theta_t)
-#     return sigma_sub_vol_hh
 
 
 # vcompile = np.vectorize(compile)
@@ -320,12 +310,12 @@ rotation=90,
 horizontalalignment='center', verticalalignment='center')
 
 
-ax.text(37, -70, 'Chandrayaan-1\n$35^\circ$', rotation=90, 
+ax.text(38, -70, 'Chandrayaan-1\n$35^\circ$', rotation=90, 
 horizontalalignment='center', verticalalignment='center')
 #ax.text(51, -70, 'LRO', rotation=90, 
 #horizontalalignment='center', verticalalignment='center')
 
-ax.text(51, -70, 'LRO\n$49^\circ$', rotation=90, 
+ax.text(52, -70, 'LRO\n$49^\circ$', rotation=90, 
 horizontalalignment='center', verticalalignment='center')
 
 ax.set_xlabel('Incidence Angle ($^\circ$)')
