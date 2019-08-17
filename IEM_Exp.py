@@ -57,9 +57,10 @@ def surface(
 
     sigma_hh = (invariant * register_hh)
     sigma_vv = (invariant * register_vv)
-
-    sigma_sur_hh = 10 * np.log10(sigma_hh)
-    sigma_sur_vv = 10 * np.log10(sigma_hh)
+    if np.isclose(sigma_hh, 0):
+        print(i, theta, length, k, sigma, f_hh, ff_hh)
+    sigma_sur_hh = 10 * np.log10(sigma_hh.real)
+    sigma_sur_vv = 10 * np.log10(sigma_hh.real)
 
     return sigma_hh, sigma_vv, sigma_sur_hh, sigma_sur_vv
 
@@ -119,13 +120,13 @@ def reg_dielec(ft, bd, lambda_wave):
     eps_real = 1.919 ** bd
     loss_tan = 10 ** ((0.038 * ft) + (0.312 * bd) - 3.260)
     eps_imag = loss_tan * eps_real
-    eps = complex(eps_real, eps_imag)
     d_r = (np.sqrt(eps_real) * lambda_wave) / (2 * np.pi * eps_imag)
-    return eps, eps_real, eps_imag, d_r
+    return complex(eps_real, eps_imag), d_r
 
 
-def rayleigh(eps_s, eps, eps_real, eps_imag, vf, k, r_s, d):
-    
+def rayleigh(eps_s, eps, vf, k, r_s, d):
+    eps_real = eps.real
+    eps_imag = eps.imag
     eps_si = eps_s.imag
     k_i = k * np.sqrt(eps_imag)
     k_r = k * np.sqrt(eps_real)
@@ -147,19 +148,19 @@ def rayleigh(eps_s, eps, eps_real, eps_imag, vf, k, r_s, d):
 def transmission(theta, eps):
     
     theta_t = np.arcsin(np.sin(theta) / (np.sqrt(eps)))
-    tt_hh = (2 * np.cos(theta)) / (np.cos(theta) + (np.sqrt(eps) * np.cos(
-            theta_t))
+    tt_hh = (2 * np.cos(theta)) / (np.cos(theta) + (
+            np.sqrt(eps.real) * np.cos(theta_t.real))
         )
-    tt_vv = (2 * np.cos(theta)) / (np.cos(theta_t) + (np.sqrt(eps) * np.cos(
-            theta))
+    tt_vv = (2 * np.cos(theta)) / (np.cos(theta_t.real) + (
+            np.sqrt(eps.real) * np.cos(theta))
         )
-    sub_hh = (2 * np.sqrt(eps) * np.cos(theta_t)) / (
-            np.cos(theta) + (np.sqrt(eps) * np.cos(theta_t))
+    sub_hh = (2 * np.sqrt(eps) * np.cos(theta_t.real)) / (
+            np.cos(theta) + (np.sqrt(eps) * np.cos(theta_t.real))
         )
-    sub_vv = (2 * np.sqrt(eps) * np.cos(theta_t)) / (
+    sub_vv = (2 * np.sqrt(eps) * np.cos(theta_t.real)) / (
             np.cos(theta_t) + (np.sqrt(eps) * np.cos(theta))
         )
-    return tt_hh, tt_vv, sub_hh, sub_vv, theta_t
+    return tt_hh, tt_vv, sub_hh, sub_vv, theta_t.real
 
 
 def volume(a, theta, tt_hh, tt_vv, sub_hh, sub_vv, tau, theta_t):
@@ -185,8 +186,8 @@ def subsurface(
     subsur_vv = (np.cos(theta) / np.cos(theta_t)) * tt_vv * sub_vv * np.exp(
         ((-1) * 2 * tau) / np.cos(theta_t)) * sigma_vv
 
-    sigma_subsur_hh = 10 * np.log10(subsur_hh)
-    sigma_subsur_vv = 10 * np.log10(subsur_vv)
+    sigma_subsur_hh = 10 * np.log10(subsur_hh.real)
+    sigma_subsur_vv = 10 * np.log10(subsur_vv.real)
     
     return sigma_subsur_hh, sigma_subsur_vv, subsur_hh, subsur_vv
 
