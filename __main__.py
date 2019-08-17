@@ -28,20 +28,20 @@ import numpy as np
 # xpts = np.arange(0.2, 90, 0.1)
 # theta_all = np.deg2rad(np.array(xpts))
 
-ft_arr = np.arange(0, 31, 2)
+ft_arr = np.arange(0, 31, 2).astype(float)
 ft_arr[0] = 0.005
 
-bd_arr = np.arange(0.93, 3.35, 0.1)
+bd_arr = np.arange(0.93, 3.35, 0.1).astype(float)
 
-vf_arr = np.arange(0, 0.11, 0.01)
+vf_arr = np.arange(0, 0.11, 0.01).astype(float)
 vf_arr[0] = 0.0001
 
-d_arr = np.arange(4, 16, 1.0)
+d_arr = np.arange(4, 16, 1.0).astype(float)
 
-sigma_arr = np.arange(0, 5, 1)
+sigma_arr = np.arange(0, 5, 1).astype(float)
 sigma_arr[0] = 0.1
 
-theta_arr = np.arange(0, 90, 5)
+theta_arr = np.arange(0, 90, 5).astype(float)
 theta_arr[0] = 0.5
 theta_arr_rad = np.deg2rad(theta_arr)
 

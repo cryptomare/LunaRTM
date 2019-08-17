@@ -29,7 +29,6 @@ def surface(
     register_vv = 0.0
 
     while not np.isclose(indicator, 0.0, atol=cutoff):
-
         ww_hh, ii_hh = calc(
                 n=i, theta=theta, length=length, k=k,
                 sigma=sigma, f=f_hh, ff=ff_hh
@@ -57,8 +56,6 @@ def surface(
 
     sigma_hh = (invariant * register_hh)
     sigma_vv = (invariant * register_vv)
-    if np.isclose(sigma_hh, 0):
-        print(i, theta, length, k, sigma, f_hh, ff_hh)
     sigma_sur_hh = 10 * np.log10(sigma_hh.real)
     sigma_sur_vv = 10 * np.log10(sigma_hh.real)
 
