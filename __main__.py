@@ -1,207 +1,254 @@
-from IEM_Exp import volume, subsurface, subsurface_volume, total
-from IEM_Exp import coeffs, mixture, reg_dielec
-from IEM_Exp import surface
-from IEM_Exp import rayleigh
-from IEM_Exp import transmission
+# from IEM_Exp import volume, subsurface, subsurface_volume, total
+# from IEM_Exp import coeffs, mixture, reg_dielec
+# from IEM_Exp import surface
+# from IEM_Exp import rayleigh
+# from IEM_Exp import transmission
 from pathlib import Path
-from DataPreparation import read_feature
+from sklearn.utils.extmath import cartesian
+# from DataPreparation import read_feature
 import numpy as np
+from numpy import memmap
 # import matplotlib
+# import pickle
+from Model import Rover
 # from matplotlib import pyplot as plt
 # import pandas as pd
+from joblib import Parallel, delayed
 # matplotlib.rcParams.update({'font.size': 14, 'font.weight': 'bold'})
 
-# v1 = 0
-# v2 = 1
-# ft = 7
-# bd = 1.525
-# vf = 0.1
-# r_s = 1
-# d = 5
-# sigma = 1
-# sigma_2 = sigma / 5.0
-# lambda_wave = 12.6
-# k = (2.0 * np.pi) / lambda_wave
-# length = lambda_wave
-# eps_sub = 6.0 + 0.05j
-# eps_ice = 3.15 + 0.001j
-# eps_rock = 8.0 + 0.07j
-
+# v1_ = 0
+# v2_ = 1
+# ft_ = 7
+# bd_ = 1.525
+# vf_ = 0.1
+# r_s_ = 1
+# d_ = 5
+# sigma_ = 1
+# sigma_2_ = sigma_ / 5.0
+# lambda_wave_ = 1
+# k_ = (2.0 * np.pi) / lambda_wave_
+# length_ = lambda_wave_
+# eps_sub_ = 6.0 + 0.05j
+# eps_ice_ = 3.15 + 0.001j
+# eps_rock_ = 8.0 + 0.07j
+#
 # xpts = np.arange(0.2, 90, 0.1)
 # theta_all = np.deg2rad(np.array(xpts))
-from Model import Rover
+# lambda_range = np.linspace(10, 100, 10).astype(np.float32)
+# extra_lambda = np.array([12.6, 23.98], dtype=np.float32)
+# lambda_range = np.concatenate((lambda_range, extra_lambda), axis=0)
+#
+#
+# def inflate(ar, shape):
+#     al = list()
+#     for k in ar.ravel():
+#         al.append(np.full(shape=shape, fill_value=k))
+#     return np.stack(al, axis=-1)
+#
+#
+# data_path = Path(
+#     '/home/abhisek/Documents/RadarBackscatterModel/data_upd/new_data.npy'
+#     )
+# if not data_path.is_file():
+#     ft_arr = np.arange(0, 33, 3).astype(np.float32)
+#     ft_arr[0] = 0.005
+#
+#     bd_arr = np.arange(0.93, 3.33, 0.2).astype(np.float32)
+#
+#     # vf_arr = np.arange(0, 0.11, 0.01).astype(np.float32)
+#     # vf_arr[0] = 0.0001
+#
+#     d_arr = np.arange(4, 16, 1).astype(np.float32)
+#
+#     s_count = 11
+#     i = 0
+#     slist = list()
+#     for l in lambda_range:
+#         ub = l / np.pi
+#         slist.append((np.linspace(0.001, ub, s_count)).astype(np.float32))
+#     scol = np.concatenate(slist, axis=0)
+#     theta_arr = np.arange(0, 91, 10).astype(np.float32)
+#     theta_arr[0] = 0.5
+#     theta_arr[-1] = 89.5
+#     theta_arr_rad = np.deg2rad(theta_arr)
+#     dummy_sigma = np.zeros(shape=(s_count,), dtype=np.float32)
+#     # print(ft_arr.shape, bd_arr.shape, vf_arr.shape, d_arr.shape,
+#     #      theta_arr_rad.shape, dummy_sigma.shape, lambda_range.shape)
+#     in_arrays = (
+#             ft_arr,
+#             bd_arr,
+#             d_arr,
+#             theta_arr_rad,
+#             lambda_range,
+#             dummy_sigma
+#         )
+#     ad = cartesian(in_arrays)
+#     ad[:, 5] = np.tile(scol, ad[:, 5].size // scol.size)
+#     ft_array = ad[:, 0]
+#     bd_array = ad[:, 1]
+#     # vf_array = ad[:, 2]
+#     d_array = ad[:, 2]
+#     theta_array = ad[:, 3]
+#     lw_array = ad[:, 4]
+#     sigma_array = ad[:, 5]
+#
+#     @delayed
+#     def compiled(theta, v1, v2, ft, bd, vf, r_s, d, sigma,
+#                  lambda_wave, eps_sub, eps_ice, eps_rock):
+#         sigma_2 = sigma / 5.0
+#         k = (2.0 * np.pi) / lambda_wave
+#         length = lambda_wave
+#         eps, d_r = reg_dielec(
+#                 ft=ft, bd=bd, lambda_wave=lambda_wave
+#             )
+#         eps_s = mixture(v1=v1, v2=v2, eps_ice=eps_ice, eps_rock=eps_rock)
+#
+#         a, tau, k_r = rayleigh(
+#                 eps_s=eps_s, eps=eps,
+#                 vf=vf, k=k, r_s=r_s, d=d
+#             )
+#
+#         tt_hh, tt_vv, sub_hh, sub_vv, theta_t = transmission(
+#                 theta=theta, eps=eps
+#             )
+#
+#         _, _, f_hh, f_vv, ff_hh, ff_vv = coeffs(eps=eps_sub, theta=theta_t)
+#
+#         sigma_hh_1, sigma_vv_1, _, _ = surface(
+#                 theta=theta_t, length=length,
+#                 lambda_wave=lambda_wave, sigma=sigma_2,
+#                 f_hh=f_hh, f_vv=f_vv, ff_hh=ff_hh,
+#                 ff_vv=ff_vv, cutoff=1e-16
+#             )
+#
+#         _, _, f_hh, f_vv, ff_hh, ff_vv = coeffs(eps=eps, theta=theta)
+#
+#         sigma_hh, sigma_vv, sigma_sur_hh, sigma_sur_vv = surface(
+#                 theta=theta,
+#                 length=length,
+#                 lambda_wave=lambda_wave,
+#                 sigma=sigma, cutoff=1e-16,
+#                 f_hh=f_hh, f_vv=f_vv,
+#                 ff_hh=ff_hh, ff_vv=ff_vv
+#             )
+#
+#         sigma_vol_hh, sigma_vol_vv, volume_hh, volume_vv = volume(
+#                 a=a, theta=theta, tt_hh=tt_hh,
+#                 tt_vv=tt_vv, sub_hh=sub_hh,
+#                 sub_vv=sub_vv, tau=tau, theta_t=theta_t
+#             )
+#
+#         sigma_subsur_hh, sigma_subsur_vv, subsur_hh, subsur_vv = subsurface(
+#                 theta=theta, tt_hh=tt_hh,
+#                 sub_hh=sub_hh, tt_vv=tt_vv,
+#                 sub_vv=sub_vv, tau=tau,
+#                 theta_t=theta_t,
+#                 sigma_hh=sigma_hh_1,
+#                 sigma_vv=sigma_vv_1
+#             )
+#
+#         r_h, r_v, _, _, _, _ = coeffs(eps=eps_sub, theta=theta_t)
+#
+#         sub_out = subsurface_volume(
+#             a=a,
+#             theta=theta,
+#             eps_s=eps_s,
+#             eps_sub=eps_sub,
+#             tt_hh=tt_hh,
+#             tt_vv=tt_vv,
+#             tau=tau,
+#             theta_t=theta_t,
+#             sigma_2=sigma_2,
+#             k=k
+#             )
+#         sigma_sub_vol_hh, sigma_sub_vol_vv, sub_vol_hh, sub_vol_vv = sub_out
+#         sigma_total_hh, sigma_total_vv = total(
+#             sigma_hh=sigma_hh,
+#             sigma_vv=sigma_vv,
+#             sigma_vol_hh=volume_hh,
+#             sigma_vol_vv=volume_vv,
+#             sigma_subsur_hh=subsur_hh,
+#             sigma_subsur_vv=subsur_vv,
+#             sigma_sub_vol_hh=sub_vol_hh,
+#             sigma_sub_vol_vv=sub_vol_vv)
+#         return [
+#                     lambda_wave,
+#                     theta,
+#                     sigma_total_hh.real,
+#                     sigma_total_vv.real,
+#                     eps.real,
+#                     eps.imag,
+#                     sigma,
+#                     d
+#                 ]
+#
+#     print('Started\n')
+#     data = Parallel(n_jobs=10, verbose=60)(compiled(
+#             v1=v1_,
+#             v2=v2_,
+#             r_s=r_s_,
+#             lambda_wave=lw,
+#             eps_sub=eps_sub_,
+#             eps_ice=eps_ice_,
+#             eps_rock=eps_rock_,
+#             bd=bd,
+#             vf=vf_,
+#             d=d,
+#             sigma=sigma,
+#             ft=ft,
+#             theta=theta
+#         )
+#         for bd, d, sigma, ft, theta, lw in zip(
+#             bd_array,
+#             d_array,
+#             sigma_array,
+#             ft_array,
+#             theta_array,
+#             lw_array
+#         )
+#         )
+#     print('\nProcessing Finished')
+#     dat = np.array(data, dtype=np.float32)
+#     np.save(data_path, dat)
+#     print('\nWriting Complete')
 
-ft_arr = np.arange(0, 31, 2).astype(float)
-ft_arr[0] = 0.005
+################################################################################
+data_dir = Path('/home/abhisek/Documents/RadarBackscatterModel/data_upd/')
+# inmap = memmap(
+#         str(((data_dir / 'all_input.dat').absolute())),
+#         dtype=np.float32,
+#         mode='r',
+#         shape=(11499840, 4)
+#     )
+# outmap = memmap(
+#         str(((data_dir / 'all_output.dat').absolute())),
+#         dtype=np.float32,
+#         mode='r',
+#         shape=(11499840, 5)
+#     )
+main_data = np.load(data_dir / 'new_data.npy')
 
-bd_arr = np.arange(0.93, 3.35, 0.1).astype(float)
+#####
+# main_data[:, 0] = main_data[:, 0] / 100.0
+# main_data[:, 1] = main_data[:, 1] / np.deg2rad(90)
+# main_data[:, 2] = (main_data[:, 2] + 125) / 100.0
+# main_data[:, 3] = (main_data[:, 3] + 125) / 100.0
+# main_data[:, 4] = main_data[:, 4] / 10.0
+# main_data[:, 5] = main_data[:, 5] * 10
+# main_data[:, 6] = main_data[:, 6] / 32.0
+# main_data[:, 7] = main_data[:, 7] / 16.0
+#####
 
-vf_arr = np.arange(0, 0.11, 0.01).astype(float)
-vf_arr[0] = 0.0001
-
-d_arr = np.arange(4, 16, 1.0).astype(float)
-
-sigma_arr = np.arange(0, 5, 1).astype(float)
-sigma_arr[0] = 0.1
-
-theta_arr = np.arange(0, 90, 5).astype(float)
-theta_arr[0] = 0.5
-theta_arr_rad = np.deg2rad(theta_arr)
-
-in_arrays = (ft_arr, bd_arr, vf_arr, d_arr, sigma_arr, theta_arr_rad)
-out_arrays = np.meshgrid(*in_arrays)
-ft_array, bd_array, vf_array, d_array, sigma_array, theta_array = out_arrays
-
-
-data_path = Path('data/data_dump.npy')
-if not data_path.is_file():
-    def compiled(theta, v1, v2, ft, bd, vf, r_s, d, sigma,
-                 lambda_wave, eps_sub, eps_ice, eps_rock):
-        sigma_2 = sigma / 5.0
-        k = (2.0 * np.pi) / lambda_wave
-        length = lambda_wave
-        eps, d_r = reg_dielec(
-                ft=ft, bd=bd, lambda_wave=lambda_wave
-            )
-        eps_s = mixture(v1=v1, v2=v2, eps_ice=eps_ice, eps_rock=eps_rock)
-
-        a, tau, k_r = rayleigh(
-                eps_s=eps_s, eps=eps,
-                vf=vf, k=k, r_s=r_s, d=d
-            )
-
-        tt_hh, tt_vv, sub_hh, sub_vv, theta_t = transmission(
-                theta=theta, eps=eps
-            )
-
-        _, _, f_hh, f_vv, ff_hh, ff_vv = coeffs(eps=eps_sub, theta=theta_t)
-
-        sigma_hh_1, sigma_vv_1, _, _ = surface(
-                theta=theta_t, length=length,
-                lambda_wave=lambda_wave, sigma=sigma_2,
-                f_hh=f_hh, f_vv=f_vv, ff_hh=ff_hh,
-                ff_vv=ff_vv, cutoff=1e-16
-            )
-
-        _, _, f_hh, f_vv, ff_hh, ff_vv = coeffs(eps=eps, theta=theta)
-
-        sigma_hh, sigma_vv, sigma_sur_hh, sigma_sur_vv = surface(
-                theta=theta,
-                length=length,
-                lambda_wave=lambda_wave,
-                sigma=sigma, cutoff=1e-16,
-                f_hh=f_hh, f_vv=f_vv,
-                ff_hh=ff_hh, ff_vv=ff_vv
-            )
-
-        sigma_vol_hh, sigma_vol_vv, volume_hh, volume_vv = volume(
-                a=a, theta=theta, tt_hh=tt_hh,
-                tt_vv=tt_vv, sub_hh=sub_hh,
-                sub_vv=sub_vv, tau=tau, theta_t=theta_t
-            )
-
-        sigma_subsur_hh, sigma_subsur_vv, subsur_hh, subsur_vv = subsurface(
-                theta=theta, tt_hh=tt_hh,
-                sub_hh=sub_hh, tt_vv=tt_vv,
-                sub_vv=sub_vv, tau=tau,
-                theta_t=theta_t,
-                sigma_hh=sigma_hh_1,
-                sigma_vv=sigma_vv_1
-            )
-
-        r_h, r_v, _, _, _, _ = coeffs(eps=eps_sub, theta=theta_t)
-
-        sub_out = subsurface_volume(
-                a=a,
-                theta=theta,
-                eps_s=eps_s,
-                eps_sub=eps_sub,
-                tt_hh=tt_hh,
-                tt_vv=tt_vv,
-                tau=tau,
-                theta_t=theta_t,
-                sigma_2=sigma_2,
-                k=k
-            )
-        sigma_sub_vol_hh, sigma_sub_vol_vv, sub_vol_hh, sub_vol_vv = sub_out
-        sigma_total_hh, sigma_total_vv = total(
-                sigma_hh=sigma_hh,
-                sigma_vv=sigma_vv,
-                sigma_vol_hh=volume_hh,
-                sigma_vol_vv=volume_vv,
-                sigma_subsur_hh=subsur_hh,
-                sigma_subsur_vv=subsur_vv,
-                sigma_sub_vol_hh=sub_vol_hh,
-                sigma_sub_vol_vv=sub_vol_vv)
-        return (
-                    theta,
-                    eps,
-                    d_r,
-                    sigma,
-                    sigma_sub_vol_hh,
-                    sigma_subsur_hh,
-                    sigma_vol_hh,
-                    sigma_sur_hh,
-                    sigma_total_hh,
-                    sigma_sub_vol_vv,
-                    sigma_subsur_vv,
-                    sigma_vol_vv,
-                    sigma_sur_vv,
-                    sigma_total_vv
-                )
-
-
-    orbit = np.vectorize(compiled, excluded=[
-            'v1', 'v2', 'r_s', 'lambda_wave', 'eps_sub', 'eps_ice', 'eps_rock'
-        ], otypes=[object])
-    print('Started')
-    data = orbit(
-            theta=theta_array,
-            v1=0, v2=1, ft=ft_array, bd=bd_array, vf=vf_array, r_s=1, d=d_array,
-            sigma=sigma_array, lambda_wave=12.6, eps_sub=(6.0 + 0.05j),
-            eps_ice=(3.15 + 0.001j), eps_rock=(8.0 + 0.07j),
-        )
-    print('Finished')
-    np.save(file=data_path, arr=data)
-
-data = np.load(data_path, allow_pickle=True)
-flat_data = data.ravel()
-eps_ = read_feature(flat_data, 1)
-eps_real = eps_.real
-eps_imag = eps_.imag
-d_r_ = read_feature(flat_data, 2)
-sigma_ = read_feature(flat_data, 3)
-sigma_real = sigma_.real
-# sigma_sub_vol_hh_ = read_feature(flat_data, 4)
-# sigma_subsur_hh_ = read_feature(flat_data, 5)
-# sigma_vol_hh_ = read_feature(flat_data, 6)
-# sigma_sur_hh_ = read_feature(flat_data, 7)
-sigma_total_hh_ = read_feature(flat_data, 8)
-st_hh_real = sigma_total_hh_.real
-# sigma_sub_vol_vv_ = read_feature(flat_data, 9)
-# sigma_subsur_vv_ = read_feature(flat_data, 10)
-# sigma_vol_vv_ = read_feature(flat_data, 11)
-# sigma_sur_vv_ = read_feature(flat_data, 12)
-sigma_total_vv_ = read_feature(flat_data, 13)
-st_vv_real = sigma_total_vv_.real
-theta_ = theta_array.ravel()
-data_in = np.stack(
-            (st_hh_real, st_vv_real, theta_),
-            axis=-1
-    )
-data_out = np.stack(
-        (eps_real, eps_imag, d_r_, sigma_real),
-        axis=-1
-    )
-datx = Path('data/data_input.npy')
-daty = Path('data/data_output.npy')
-if not (datx.is_file() and daty.is_file()):
-    np.save(file=datx, arr=data_in)
-    np.save(file=daty, arr=data_out)
-structure = Rover()
+inmap = main_data[:, :4]
+outmap = main_data[:, 4:-2]
+structure = Rover(input_features=4, output_features=2)
 structure.ready()
-structure.learn(x=data_in, y=data_out, epochs=100)
-structure.store('model/model.h5')
+structure.learn(x=inmap, y=outmap, batch_size=1000, epochs=10)
+structure.store(
+        str((data_dir / 'Model.h5').absolute())
+    )
+
+################################################################################
 # y_vals = np.array(list(map(compiled, theta_all.tolist())))
 # theta_m = np.deg2rad(np.arange(5, 90, 5))
 # markers = np.array(list(map(compiled, theta_m.tolist())))
