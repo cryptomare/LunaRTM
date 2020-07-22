@@ -3,8 +3,8 @@ import numpy as np
 
 def calc(n, theta, length, k, sigma, f, ff):
     ww = 2 * np.pi * n * (length ** 2) / (
-            ((n * 2) + ((2 * k * length * np.sin(theta)) ** 2)) ** 1.5
-        )
+        ((n * 2) + ((2 * k * length * np.sin(theta)) ** 2)) ** 1.5
+    )
     ii_1 = ((2 * k * np.cos(theta) * sigma) ** n) * f
     ii_3 = (((k * np.cos(theta) * sigma) ** n) * ff)
     ii_2 = (np.exp(-1 * (k ** 2) * ((np.cos(theta)) ** 2) * (sigma ** 2)))
@@ -15,28 +15,28 @@ def calc(n, theta, length, k, sigma, f, ff):
 
 
 def surface(
-            theta, length, lambda_wave, sigma,
-            f_hh, f_vv, ff_hh, ff_vv, cutoff=1e-16
-        ):
+        theta, length, lambda_wave, sigma,
+        f_hh, f_vv, ff_hh, ff_vv, cutoff=1e-16
+):
     
     k = (2 * np.pi) / lambda_wave
     i = 1
     indicator = 1 / np.math.factorial(i)
     invariant = ((k ** 2) / (4 * np.pi)) * np.exp(-2 * (k ** 2) * (
-                    (np.cos(theta)) ** 2) * (sigma ** 2)
-                )
+        (np.cos(theta)) ** 2) * (sigma ** 2)
+    )
     register_hh = 0.0
     register_vv = 0.0
 
     while not np.isclose(indicator, 0.0, atol=cutoff):
         ww_hh, ii_hh = calc(
-                n=i, theta=theta, length=length, k=k,
-                sigma=sigma, f=f_hh, ff=ff_hh
-            )
+            n=i, theta=theta, length=length, k=k,
+            sigma=sigma, f=f_hh, ff=ff_hh
+        )
         ww_vv, ii_vv = calc(
-                n=i, theta=theta, length=length, k=k,
-                sigma=sigma, f=f_vv, ff=ff_vv
-            )
+            n=i, theta=theta, length=length, k=k,
+            sigma=sigma, f=f_vv, ff=ff_vv
+        )
 
         mod_ii_hh = ii_hh * np.conj(ii_hh)
         mod_ii_vv = ii_vv * np.conj(ii_vv)
@@ -69,11 +69,11 @@ def coeffs(eps, theta):
     r_h = r_h_num / r_h_denom
 
     r_v_num = (
-            (eps * (np.cos(theta))) - ((eps - ((np.sin(theta)) ** 2)) ** 0.5)
-        )
+        (eps * (np.cos(theta))) - ((eps - ((np.sin(theta)) ** 2)) ** 0.5)
+    )
     r_v_denom = (
-            (eps * (np.cos(theta))) + ((eps - ((np.sin(theta)) ** 2)) ** 0.5)
-        )
+        (eps * (np.cos(theta))) + ((eps - ((np.sin(theta)) ** 2)) ** 0.5)
+    )
     r_v = r_v_num / r_v_denom
 
     tt_h = 1 + r_h
@@ -84,10 +84,19 @@ def coeffs(eps, theta):
 
     ff_hh_1 = (((((np.sin(theta)) ** 2) / np.cos(theta)) - sq) * (tt_h ** 2))
     ff_hh_2 = (2 * ((np.sin(theta)) ** 2) * (
-            (1 / np.cos(theta)) + (1 / sq)
-        ) * tt_h * tt_hm)
-    ff_hh_3 = (((((np.sin(theta)) ** 2) / np.cos(theta)) +
-                ((1 + ((np.sin(theta)) ** 2)) / sq)) * (tt_hm ** 2))
+        (1 / np.cos(theta)) + (1 / sq)
+    ) * tt_h * tt_hm)
+
+    ff_hh_3 = (
+        (
+            (
+                ((np.sin(theta)) ** 2) / np.cos(theta)
+            ) +
+            (
+                (1 + ((np.sin(theta)) ** 2)) / sq
+            )
+        ) * (tt_hm ** 2)
+    )
 
     ff_hh = -1 * (ff_hh_1 - ff_hh_2 + ff_hh_3)
 
@@ -95,8 +104,13 @@ def coeffs(eps, theta):
                 (sq / eps)) * (tt_v ** 2))
     ff_vv_2 = (2 * ((np.sin(theta)) ** 2) *
                ((1 / np.cos(theta)) + (1 / sq)) * tt_v * tt_vm)
-    ff_vv_3 = (((((np.sin(theta)) ** 2) / np.cos(theta)) +
-               ((eps * (1 + ((np.sin(theta)) ** 2))) / sq)) * (tt_vm ** 2))
+    ff_vv_3 = (
+        (
+            (((np.sin(theta)) ** 2) / np.cos(theta)) + (
+                    (eps * (1 + ((np.sin(theta)) ** 2))) / sq
+            )
+        ) * (tt_vm ** 2)
+    )
 
     ff_vv = ff_vv_1 - ff_vv_2 + ff_vv_3
 
@@ -131,11 +145,11 @@ def rayleigh(eps_s, eps, vf, k, r_s, d):
     ks_1 = (eps_s - eps) / (eps_s + (2 * eps))
     nn_d = (3 * vf) / (4 * np.pi * (r_s ** 3))
     ka = (2 * k_i * (1 - vf)) + (vf * k_r * (eps_si / eps_real) * (
-            ka_1 * np.conj(ka_1))
-        )
+        ka_1 * np.conj(ka_1))
+    )
     ks = (8 / 3) * np.pi * nn_d * (k_r ** 4) * (r_s ** 6) * (
-            ks_1 * np.conj(ks_1)
-        )
+        ks_1 * np.conj(ks_1)
+    )
     ke = ka + ks
     a = ks / ke
     tau = ke * d
@@ -146,26 +160,28 @@ def transmission(theta, eps):
     
     theta_t = np.arcsin(np.sin(theta) / (np.sqrt(eps)))
     tt_hh = (2 * np.cos(theta)) / (np.cos(theta) + (
-            np.sqrt(eps.real) * np.cos(theta_t.real))
-        )
+        np.sqrt(eps.real) * np.cos(theta_t.real))
+    )
     tt_vv = (2 * np.cos(theta)) / (np.cos(theta_t.real) + (
-            np.sqrt(eps.real) * np.cos(theta))
-        )
+        np.sqrt(eps.real) * np.cos(theta))
+    )
     sub_hh = (2 * np.sqrt(eps) * np.cos(theta_t.real)) / (
-            np.cos(theta) + (np.sqrt(eps) * np.cos(theta_t.real))
-        )
+        np.cos(theta) + (np.sqrt(eps) * np.cos(theta_t.real))
+    )
     sub_vv = (2 * np.sqrt(eps) * np.cos(theta_t.real)) / (
-            np.cos(theta_t) + (np.sqrt(eps) * np.cos(theta))
-        )
+        np.cos(theta_t) + (np.sqrt(eps) * np.cos(theta))
+    )
     return tt_hh, tt_vv, sub_hh, sub_vv, theta_t.real
 
 
 def volume(a, theta, tt_hh, tt_vv, sub_hh, sub_vv, tau, theta_t):
     
     volume_hh = 0.5 * a * np.cos(theta) * tt_hh * sub_hh * (
-            1 - np.exp(((-1) * 2 * tau) / np.cos(theta_t))) * 1.5
+        1 - np.exp(((-1) * 2 * tau) / np.cos(theta_t))
+    ) * 1.5
     volume_vv = 0.5 * a * np.cos(theta) * tt_vv * sub_vv * (
-            1 - np.exp(((-1) * 2 * tau) / np.cos(theta_t))) * 1.5
+        1 - np.exp(((-1) * 2 * tau) / np.cos(theta_t))
+    ) * 1.5
 
     sigma_vol_hh = 10 * np.log10(volume_hh)
     sigma_vol_vv = 10 * np.log10(volume_vv)
@@ -174,14 +190,17 @@ def volume(a, theta, tt_hh, tt_vv, sub_hh, sub_vv, tau, theta_t):
 
 
 def subsurface(
-            theta, tt_hh, sub_hh, tt_vv, sub_vv, tau, theta_t, sigma_hh,
-        sigma_vv
-        ):
+        theta, tt_hh, sub_hh, tt_vv, sub_vv,
+        tau, theta_t, sigma_hh, sigma_vv
+):
     
     subsur_hh = (np.cos(theta) / np.cos(theta_t)) * tt_hh * sub_hh * np.exp(
-        ((-1) * 2 * tau) / np.cos(theta_t)) * sigma_hh
+        ((-1) * 2 * tau) / np.cos(theta_t)
+    ) * sigma_hh
+
     subsur_vv = (np.cos(theta) / np.cos(theta_t)) * tt_vv * sub_vv * np.exp(
-        ((-1) * 2 * tau) / np.cos(theta_t)) * sigma_vv
+        ((-1) * 2 * tau) / np.cos(theta_t)
+    ) * sigma_vv
 
     sigma_subsur_hh = 10 * np.log10(subsur_hh.real)
     sigma_subsur_vv = 10 * np.log10(subsur_vv.real)
