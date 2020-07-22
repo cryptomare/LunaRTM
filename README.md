@@ -39,5 +39,5 @@ Additionally dielectric maps of the lunar poles have been generated to avoid
  * ##### South Pole
  ![alt text](artworks/SP.png)
  
- --
+ ---
  License: [CC-BY](https://creativecommons.org/licenses/by/3.0/)
