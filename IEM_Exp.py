@@ -49,7 +49,7 @@ def surface(k, theta, length, sigma, f_hh, f_vv, F_hh, F_vv, cutoff=1e-16):
     sigma_vv = (invariant * register_vv)
 
     sigma_sur_hh = 10 * np.log10(sigma_hh)
-    sigma_sur_vv = 10 * np.log10(sigma_hh)
+    sigma_sur_vv = 10 * np.log10(sigma_vv)
 
     return sigma_hh, sigma_vv, sigma_sur_hh, sigma_sur_vv
 
