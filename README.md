@@ -1,4 +1,4 @@
-# Radar Backscatter Model
+# LunaRTM
 _Inversion model for surface parameter retrieval using deep learning_
 ---
 In this project, we developed an inversion model for extracting the physical
